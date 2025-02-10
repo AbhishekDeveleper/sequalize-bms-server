@@ -2,6 +2,9 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import morgan from "morgan";
+import router from "./routes/bmsRoutes.js";
+import globalErrorHandler from "./controller/errController.js";
+import "./associations/booksassociation.js";
 export const app = express();
 
 app.options("*", cors());
@@ -14,9 +17,7 @@ const limiter = rateLimit({
 
 app.use(express.json({ limit: "20kb" }));
 app.use("/api", limiter);
-app.use(morgan('dev'))
-
-
+app.use(morgan("dev"));
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(
@@ -25,13 +26,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.get("/home", (req: Request, res:Response) => {
+app.get("/home", (req: Request, res: Response) => {
   res.send("Welcome to home Page ...");
 });
 
+app.use("/api", router);
 
 app.use("*", (req, res, next) => {
   res.send(`The route with this url ${req.originalUrl} is not defined`);
   next();
 });
 
+app.use(globalErrorHandler);
