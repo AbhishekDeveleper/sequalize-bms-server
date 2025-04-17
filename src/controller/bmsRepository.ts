@@ -21,7 +21,7 @@ class BMSRepository implements BaseBook {
         });
 
       return booksData as BookReturnType[];
-    } catch (err) {
+    } catch (err:unknown) {
       if (err instanceof Error) {
         throw new Error(
           err?.message || "Something went wrong in fetching book details !"
@@ -55,7 +55,7 @@ class BMSRepository implements BaseBook {
           generId: bookCategory.id,
         });
       }
-    } catch (err) {
+    } catch (err:unknown) {
       if (err instanceof Error) {
         throw new Error(
           err?.message || "Something went wrong iwhile inserting newBook !"
@@ -68,7 +68,7 @@ class BMSRepository implements BaseBook {
   async deleteBookById(id: number): Promise<void> {
     try {
       await bookModel.destroy({ where: { bookIsbn: id } });
-    } catch (err) {
+    } catch (err:unknown) {
       if (err instanceof Error) {
         throw new Error(
           err?.message || "Something went wrong in deleting book from library !"
@@ -92,7 +92,7 @@ class BMSRepository implements BaseBook {
         book.bookPublishDate = bookData.bookPublishDate || book.bookPublishDate;
         await book.save();
       }
-    } catch (err) {
+    } catch (err:unknown) {
       if (err instanceof Error) {
         throw new Error(
           err?.message || "Something went wrong in updating  book details !"

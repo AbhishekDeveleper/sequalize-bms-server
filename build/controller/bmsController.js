@@ -1,4 +1,7 @@
 import { newBookService } from "./bmsService.js";
+import BookEvents from "./bookEvent.js";
+import processBooks from "./bookStreamProcessor.js";
+const bookEvents = new BookEvents();
 export const addBook = async (req, res) => {
     const { authorName, generType, bookTitle, bookIsbn, bookPublishDate, bookPrice, } = req.body;
     const bookBody = {
@@ -10,6 +13,7 @@ export const addBook = async (req, res) => {
         bookPrice,
     };
     await newBookService.addBook(bookBody);
+    bookEvents.emit("book_created", { authorName, bookTitle, bookPrice });
     res.status(200).json({
         status: "success",
         message: "newBook added Successfully.",
@@ -25,6 +29,7 @@ export const getBook = async (req, res) => {
         });
     }
     else {
+        bookEvents.emit("error", "request failed");
         res.status(400).json({
             error: "something went wrong",
         });
@@ -57,4 +62,16 @@ export const updateBookWithId = async (req, res) => {
         status: "success",
         message: "updated successfully",
     });
+};
+export const fileProcessingWithStream = async (req, res) => {
+    try {
+        await processBooks('./../../books.txt', './../../output.txt');
+        res.status(200).json({ status: 'success', message: 'file processed and write successfully' });
+    }
+    catch (error) {
+        bookEvents.emit("error", "request failed");
+        if (error instanceof Error) {
+            throw new Error(`request failed with ${error.message}`);
+        }
+    }
 };
