@@ -3,39 +3,31 @@ import path from 'path';
 import readline from 'readline';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { Worker } from 'worker_threads';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Processes a book line (expects a JSON object), validates and augments it.
+ * Runs a worker thread to process a single line of book data.
  */
-function processLine(line:any) {
-  try {
-    // Remove BOM and whitespace
-    line = line.replace(/^\uFEFF/, '').trim();
-    if (!line) return null;
+function runWorker(line:any) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./../workers/worker.js', import.meta.url), {
+      workerData: line,
+    });
 
-    const book = JSON.parse(line);
-
-    if (!book.title || !book.author || typeof book.pages !== 'number') {
-      throw new Error('Invalid book format');
-    }
-
-    return {
-      ...book,
-      processedAt: new Date().toISOString(),
-      isValid: true,
-    };
-  } catch (error:unknown) {
-    console.error('Skipping invalid line:', line);
-    console.error('Error:');
-    return null;
-  }
+    worker.on('message', resolve);
+    worker.on('error', reject);
+    worker.on('exit', (code) => {
+      if (code !== 0)
+        reject(new Error(`Worker stopped with exit code ${code}`));
+    });
+  });
 }
 
 /**
- * Reads from input file and writes processed books to output using streams.
+ * Reads input file line by line, processes with worker, writes to output.
  */
 async function processBooks(inputFile:string, outputFile:string) {
   const inputPath = path.join(__dirname, inputFile);
@@ -47,29 +39,28 @@ async function processBooks(inputFile:string, outputFile:string) {
 
   const readStream = fs.createReadStream(inputPath, { encoding: 'utf-8' });
   const writeStream = fs.createWriteStream(outputPath);
-
-  const rl = readline.createInterface({
-    input: readStream,
-    crlfDelay: Infinity, // Handle both LF and CRLF
-  });
+  const rl = readline.createInterface({ input: readStream, crlfDelay: Infinity });
 
   let processedCount = 0;
 
   for await (const line of rl) {
-    const result = processLine(line);
-    if (result) {
-      writeStream.write(JSON.stringify(result) + '\n');
-      processedCount++;
+    try {
+      const result = await runWorker(line);
+      if (result) {
+        writeStream.write(JSON.stringify(result) + '\n');
+        processedCount++;
+      }
+    } catch (error) {
+      console.error('Worker error:', error);
     }
   }
 
   writeStream.end();
-
   console.log(`Successfully processed ${processedCount} books.`);
   console.log(`Output written to ${outputFile}`);
 }
 
-// Example usage:
+// Uncomment to run directly
 // processBooks('books.txt', 'output.txt');
 
 export default processBooks;
