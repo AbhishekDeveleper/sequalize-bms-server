@@ -1,0 +1,3 @@
+{"title":"Book A","author":"Author A","pages":123,"processedAt":"2025-04-17T07:37:07.178Z","isValid":true}
+{"title":"Book B","author":"Author B","pages":456,"processedAt":"2025-04-17T07:37:07.178Z","isValid":true}
+{"title":"Incomplete Book","author":"Author C","pages":456,"processedAt":"2025-04-17T07:37:07.182Z","isValid":true}
